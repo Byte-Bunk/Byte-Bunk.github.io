@@ -33,172 +33,172 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-import { 
-    getFirestore, 
-    collection, 
-    query, 
-    where, 
-    orderBy, 
-    limit, 
-    addDoc, 
-    serverTimestamp, 
-    onSnapshot, 
-    doc, 
-    getDocs, 
-    getDoc 
-} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            query, 
+            where, 
+            orderBy, 
+            limit, 
+            addDoc, 
+            serverTimestamp, 
+            onSnapshot, 
+            doc, 
+            getDocs, 
+            getDoc 
+        } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyAyT-_WLPEVXPb53LDr2zKKxXHm9S3eU3Q",
-    authDomain: "codehive-e2e9f.firebaseapp.com",
-    projectId: "codehive-e2e9f",
-    storageBucket: "codehive-e2e9f.appspot.com",
-    messagingSenderId: "421116596644",
-    appId: "1:421116596644:web:0ba1186dff6c121df8f131"
-};
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyT-_WLPEVXPb53LDr2zKKxXHm9S3eU3Q",
+            authDomain: "codehive-e2e9f.firebaseapp.com",
+            projectId: "codehive-e2e9f",
+            storageBucket: "codehive-e2e9f.appspot.com",
+            messagingSenderId: "421116596644",
+            appId: "1:421116596644:web:0ba1186dff6c121df8f131"
+        };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth();
-const db = getFirestore();
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
 
-let currentUser = null;
-let selectedUser = null;
+        let currentUser = null;
+        let selectedUser = null;
 
-// Authentication state listener
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById("user-info").textContent = `Hello, ${user.displayName || 'User'}`;
-        document.getElementById("logout-button").style.display = "inline-block";
-        loadUsers();
-        loadDMHistory();
-    } else {
-        window.location.href = "index.html"; // Redirect to login if user is not authenticated
-    }
-});
+        // Authentication state listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById("user-info").textContent = `Hello, ${user.displayName || 'User'}`;
+                document.getElementById("logout-button").style.display = "inline-block";
+                loadUsers();
+                loadDMHistory();
+            } else {
+                window.location.href = "index.html"; // Redirect to login if user is not authenticated
+            }
+        });
 
-// Logout functionality
-document.getElementById("logout-button").onclick = async () => {
-    await signOut(auth);
-};
+        // Logout functionality
+        document.getElementById("logout-button").onclick = async () => {
+            await signOut(auth);
+        };
 
-// Load user list
-async function loadUsers(queryText = "") {
-    const usersRef = collection(db, "users");
-    const q = query(
-        usersRef,
-        where("username", ">=", queryText),
-        where("username", "<=", queryText + '\\uf8ff')
-    );
-    const querySnapshot = await getDocs(q);
-
-    const userList = document.getElementById("user-list");
-    userList.innerHTML = "";
-
-    querySnapshot.forEach(doc => {
-        const userData = doc.data();
-        const userItem = document.createElement("div");
-        userItem.textContent = userData.username;
-        userItem.classList.add("user");
-        userItem.onclick = () => startChat(doc.id, userData.username);
-        userList.appendChild(userItem);
-    });
-}
-
-// Load DM history
-async function loadDMHistory() {
-    const dmList = document.getElementById("dm-list");
-    const messagesRef = collection(db, "messages");
-    const q = query(
-        messagesRef,
-        where("senderId", "==", currentUser.uid),
-        limit(10)
-    );
-    const querySnapshot = await getDocs(q);
-
-    dmList.innerHTML = "<h3>DM History</h3>";
-
-    const usersChattedWith = new Set();
-    querySnapshot.forEach(doc => {
-        const message = doc.data();
-        const otherUser = message.senderId === currentUser.uid ? message.receiverId : message.senderId;
-        usersChattedWith.add(otherUser);
-    });
-
-    for (const userId of usersChattedWith) {
-        const userRef = doc(db, "users", userId);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data();
-        const userItem = document.createElement("div");
-        userItem.textContent = userData.username;
-        userItem.classList.add("user");
-        userItem.onclick = () => startChat(userId, userData.username);
-        dmList.appendChild(userItem);
-    }
-}
-
-// Start chat with a selected user
-function startChat(userId, username) {
-    selectedUser = userId;
-    document.getElementById("chat-header").textContent = `Chat with ${username}`;
-    document.getElementById("chat-input").disabled = false;
-    document.getElementById("send-message-button").disabled = false;
-    loadMessages(userId);
-}
-
-// Load messages between current user and selected user
-function loadMessages(receiverId) {
-    const messagesRef = collection(db, "messages");
-    const q = query(
-        messagesRef,
-        where("senderId", "in", [currentUser.uid, receiverId]),
-        where("receiverId", "in", [currentUser.uid, receiverId]),
-        orderBy("timestamp"),
-        limit(50)
-    );
-
-    onSnapshot(q, (snapshot) => {
-        console.log("Messages snapshot received:", snapshot.docs.map(doc => doc.data()));
-        const chatMessages = document.getElementById("chat-messages");
-        chatMessages.innerHTML = "";
-
-        snapshot.forEach(doc => {
-            const message = doc.data();
-            const messageElement = document.createElement("div");
-            messageElement.classList.add(
-                "message",
-                message.senderId === currentUser.uid ? "sent" : "received"
+        // Load user list
+        async function loadUsers(queryText = "") {
+            const usersRef = collection(db, "users");
+            const q = query(
+                usersRef,
+                where("username", ">=", queryText),
+                where("username", "<=", queryText + '\\uf8ff')
             );
-            messageElement.textContent = message.message;
-            chatMessages.appendChild(messageElement);
-        });
+            const querySnapshot = await getDocs(q);
 
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the latest message
-    });
-}
+            const userList = document.getElementById("user-list");
+            userList.innerHTML = "";
 
-// Send a message
-document.getElementById("send-message-button").onclick = async () => {
-    const messageText = document.getElementById("chat-input").value.trim();
+            querySnapshot.forEach(doc => {
+                const userData = doc.data();
+                const userItem = document.createElement("div");
+                userItem.textContent = userData.username;
+                userItem.classList.add("user");
+                userItem.onclick = () => startChat(doc.id, userData.username);
+                userList.appendChild(userItem);
+            });
+        }
 
-    if (!messageText || !selectedUser) return; // Prevent empty or invalid messages
+        // Load DM history
+        async function loadDMHistory() {
+            const dmList = document.getElementById("dm-list");
+            const messagesRef = collection(db, "messages");
+            const q = query(
+                messagesRef,
+                where("senderId", "==", currentUser.uid),
+                limit(10)
+            );
+            const querySnapshot = await getDocs(q);
 
-    try {
-        await addDoc(collection(db, "messages"), {
-            senderId: currentUser.uid,
-            receiverId: selectedUser,
-            message: messageText,
-            timestamp: serverTimestamp(),
-        });
+            dmList.innerHTML = "<h3>DM History</h3>";
 
-        document.getElementById("chat-input").value = ""; // Clear the input field
-    } catch (error) {
-        console.error("Error sending message:", error);
-    }
-};
-</script>
+            const usersChattedWith = new Set();
+            querySnapshot.forEach(doc => {
+                const message = doc.data();
+                const otherUser = message.senderId === currentUser.uid ? message.receiverId : message.senderId;
+                usersChattedWith.add(otherUser);
+            });
+
+            for (const userId of usersChattedWith) {
+                const userRef = doc(db, "users", userId);
+                const userDoc = await getDoc(userRef);
+                const userData = userDoc.data();
+                const userItem = document.createElement("div");
+                userItem.textContent = userData.username;
+                userItem.classList.add("user");
+                userItem.onclick = () => startChat(userId, userData.username);
+                dmList.appendChild(userItem);
+            }
+        }
+
+        // Start chat with a selected user
+        function startChat(userId, username) {
+            selectedUser = userId;
+            document.getElementById("chat-header").textContent = `Chat with ${username}`;
+            document.getElementById("chat-input").disabled = false;
+            document.getElementById("send-message-button").disabled = false;
+            loadMessages(userId);
+        }
+
+        // Load messages between current user and selected user
+        function loadMessages(receiverId) {
+            const messagesRef = collection(db, "messages");
+            const q = query(
+                messagesRef,
+                where("senderId", "in", [currentUser.uid, receiverId]),
+                where("receiverId", "in", [currentUser.uid, receiverId]),
+                orderBy("timestamp"),
+                limit(50)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                console.log("Messages snapshot received:", snapshot.docs.map(doc => doc.data()));
+                const chatMessages = document.getElementById("chat-messages");
+                chatMessages.innerHTML = ""; // Clear chat before adding new messages
+
+                snapshot.forEach(doc => {
+                    const message = doc.data();
+                    const messageElement = document.createElement("div");
+                    messageElement.classList.add(
+                        "message",
+                        message.senderId === currentUser.uid ? "sent" : "received"
+                    );
+                    messageElement.textContent = message.message;
+                    chatMessages.appendChild(messageElement);
+                });
+
+                chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the latest message
+            });
+        }
+
+        // Send a message
+        document.getElementById("send-message-button").onclick = async () => {
+            const messageText = document.getElementById("chat-input").value.trim();
+
+            if (!messageText || !selectedUser) return; // Prevent empty or invalid messages
+
+            try {
+                await addDoc(collection(db, "messages"), {
+                    senderId: currentUser.uid,
+                    receiverId: selectedUser,
+                    message: messageText,
+                    timestamp: serverTimestamp(),
+                });
+
+                document.getElementById("chat-input").value = ""; // Clear the input field
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+        };
+    </script>
 </body>
 </html>
