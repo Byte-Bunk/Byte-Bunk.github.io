@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container" id="login-container">
+        <div class="welcome-message" id="welcome-message">
+            <h1>Welcome to ChatApp!</h1>
+            <p>Connect with friends and colleagues easily!</p>
+        </div>
+        <button class="login-button" id="login-button">Log in with Google</button>
+    </div>
+
+    <div class="user-info-container" id="user-info-container">
+        <div class="user-info" id="user-info"></div>
+        <button class="chat-button" id="chat-button" style="display: none;">Go to Chat</button>
+        <button class="logout-button" id="logout-button" style="display: none;">Log Out</button>
+    </div>
+
+    <!-- Username selection form (hidden by default) -->
+    <div class="choose-username-container" id="choose-username-container" style="display: none;">
+        <h2>Please choose a username:</h2>
+        <input type="text" id="username-input" placeholder="Enter your username">
+        <button id="save-username-button">Save Username</button>
+    </div>
+
+    <script type="module">
+        // Firebase SDK imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyT-_WLPEVXPb53LDr2zKKxXHm9S3eU3Q",
+            authDomain: "codehive-e2e9f.firebaseapp.com",
+            projectId: "codehive-e2e9f",
+            storageBucket: "codehive-e2e9f.appspot.com",
+            messagingSenderId: "421116596644",
+            appId: "1:421116596644:web:0ba1186dff6c121df8f131"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getFirestore();
+
+        let currentUser = null;
+
+        // Auth state listener to manage user login state
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+
+                // Check if the user has a username in Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    // User already has a username, proceed normally
+                    const userData = userDoc.data();
+                    document.getElementById("user-info").textContent = `Hello, ${userData.username}`;
+                    document.getElementById("login-container").style.display = "none"; // Hide login screen
+                    document.getElementById("user-info-container").style.display = "flex"; // Show user info
+                    document.getElementById("chat-button").style.display = "inline-block"; // Show chat button
+                    document.getElementById("logout-button").style.display = "inline-block"; // Show logout button
+                } else {
+                    // First time login, ask for a username
+                    document.getElementById("choose-username-container").style.display = "block"; // Show username input form
+                    document.getElementById("login-container").style.display = "none"; // Hide login screen
+                }
+            } else {
+                currentUser = null;
+                document.getElementById("user-info").textContent = '';
+                document.getElementById("login-container").style.display = "flex"; // Show login screen
+                document.getElementById("user-info-container").style.display = "none"; // Hide user info
+                document.getElementById("chat-button").style.display = "none"; // Hide chat button
+                document.getElementById("logout-button").style.display = "none"; // Hide logout button
+                document.getElementById("choose-username-container").style.display = "none"; // Hide username input
+            }
+        });
+
+        // Login with Google
+        document.getElementById("login-button").onclick = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Error during login: ", error);
+            }
+        };
+
+        // Save the chosen username
+        document.getElementById("save-username-button").onclick = async () => {
+            const username = document.getElementById("username-input").value.trim();
+
+            if (username) {
+                // Save the username to Firestore
+                const userDocRef = doc(db, "users", currentUser.uid);
+                await setDoc(userDocRef, {
+                    username: username,
+                    email: currentUser.email,
+                    photoURL: currentUser.photoURL,
+                });
+
+                // Update UI
+                document.getElementById("user-info").textContent = `Hello, ${username}`;
+                document.getElementById("choose-username-container").style.display = "none"; // Hide username input
+                document.getElementById("login-container").style.display = "none"; // Hide login screen
+                document.getElementById("user-info-container").style.display = "flex"; // Show user info
+                document.getElementById("chat-button").style.display = "inline-block"; // Show chat button
+                document.getElementById("logout-button").style.display = "inline-block"; // Show logout button
+            } else {
+                alert("Please enter a valid username.");
+            }
+        };
+
+        // Redirect to chat page
+        document.getElementById("chat-button").onclick = () => {
+            window.location.href = "chat.html"; // Redirect to chat page
+        };
+
+        // Log out the user
+        document.getElementById("logout-button").onclick = async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Error during logout: ", error);
+            }
+        };
+    </script>
+</body>
+</html>

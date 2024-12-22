@@ -1,0 +1,126 @@
+/* Global Styles */
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f7f9fc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-image: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    background-size: cover;
+    color: #2c3e50;
+    text-align: center;
+}
+
+/* Login Container */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffffc9;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.welcome-message h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-message p {
+    font-size: 1.2rem;
+    color: #7f8c8d;
+    margin-bottom: 2rem;
+}
+
+.login-button {
+    padding: 1rem 2rem;
+    background-color: #db4437;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background-color 0.3s;
+}
+
+.login-button:hover {
+    background-color: #c1351d;
+}
+
+/* User Info and Chat Button */
+.user-info-container {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+}
+
+.user-info {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.chat-button, .logout-button {
+    padding: 1rem 2rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background-color 0.3s;
+    display: none;
+    margin: 10px;
+}
+/* Choose Username Section */
+.choose-username-container {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+    background-color: #ffffffc9;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 400px;
+}
+
+.choose-username-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.choose-username-container input {
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 100%;
+}
+
+.choose-username-container button {
+    padding: 0.8rem 2rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.choose-username-container button:hover {
+    background-color: #2980b9;
+}
+
+.chat-button:hover, .logout-button:hover {
+    background-color: #2980b9;
+}
