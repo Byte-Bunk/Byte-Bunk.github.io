@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Firestore Product Admin</title>
+
+  <!-- ✅ Your main site’s CSS -->
+  <link rel="stylesheet" href="https://frozo-3ba69.web.app/styles.css" />
+
+  <style>
+    body {
+      padding: 20px;
+      background: #f9f9f9;
+      font-family: sans-serif;
+    }
+
+    .category-list button {
+      margin: 4px;
+      padding: 8px 12px;
+      background: #e0e0e0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .category-list button.active {
+      background: #2196f3;
+      color: white;
+    }
+
+    .product-card, .add-form {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    input, select {
+      margin: 4px 0;
+      padding: 6px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button.add-btn {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button.add-btn:hover {
+      background-color: #1976d2;
+    }
+
+    h2 small {
+      font-weight: normal;
+      color: #666;
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+    apiKey: "AIzaSyAPBo1tC9bXGCBiU-x9nqFvhs7iJ_7ethU",
+    authDomain: "lt2-wood-store.firebaseapp.com",
+    projectId: "lt2-wood-store",
+    storageBucket: "lt2-wood-store.firebasestorage.app",
+    messagingSenderId: "852881627407",
+    appId: "1:852881627407:web:48c49677b64493a833067a",
+    measurementId: "G-L0849HHSVY"
+  };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentCategory = null;
+
+    async function loadCategories() {
+      const categoriesSnapshot = await getDocs(collection(db, "categories"));
+      const catContainer = document.getElementById("categoryButtons");
+      const catSelect = document.getElementById("categorySelect");
+
+      catContainer.innerHTML = "";
+      catSelect.innerHTML = "";
+
+      categoriesSnapshot.forEach(catDoc => {
+        const category = catDoc.id;
+
+        // Button to filter by category
+        const btn = document.createElement("button");
+        btn.textContent = category;
+        btn.onclick = () => {
+          currentCategory = category;
+          highlightActiveButton(category);
+          loadProducts(category);
+        };
+        catContainer.appendChild(btn);
+
+        // Dropdown option for add-axis form
+        const opt = document.createElement("option");
+        opt.value = category;
+        opt.textContent = category;
+        catSelect.appendChild(opt);
+      });
+    }
+
+    function highlightActiveButton(category) {
+      document.querySelectorAll(".category-list button").forEach(btn => {
+        btn.classList.toggle("active", btn.textContent === category);
+      });
+    }
+
+    async function loadProducts(categoryId) {
+      const container = document.getElementById("items");
+      container.innerHTML = `<h2>Axes in <small>${categoryId}</small></h2>`;
+
+      const productsSnapshot = await getDocs(collection(db, "categories", categoryId, "products"));
+
+      productsSnapshot.forEach(productDoc => {
+        const product = productDoc.data();
+        const productId = productDoc.id;
+
+        const div = document.createElement("div");
+        div.className = "product-card";
+
+        div.innerHTML = `
+          <h3>${product.name || "Unnamed"}</h3>
+          <label>Name: <input id="name-${productId}" value="${product.name || ''}"></label><br>
+          <label>Price: <input type="number" id="price-${productId}" value="${product.price || 0}"></label><br>
+          <label>Stock: <input type="number" id="stock-${productId}" value="${product.stock ?? ''}"></label><br>
+          <label>Image URL: <input id="image-${productId}" value="${product.image || ''}"></label><br>
+          <button onclick="updateProduct('${categoryId}', '${productId}')">💾 Save</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    window.updateProduct = async (categoryId, productId) => {
+      const name = document.getElementById(`name-${productId}`).value;
+      const price = parseFloat(document.getElementById(`price-${productId}`).value);
+      const stock = parseInt(document.getElementById(`stock-${productId}`).value);
+      const image = document.getElementById(`image-${productId}`).value;
+
+      const ref = doc(db, "categories", categoryId, "products", productId);
+      await updateDoc(ref, { name, price, stock, image });
+
+      alert("✅ Product updated!");
+    };
+
+    window.addAxis = async () => {
+      const name = document.getElementById("newName").value;
+      const price = parseFloat(document.getElementById("newPrice").value);
+      const stock = parseInt(document.getElementById("newStock").value);
+      const image = document.getElementById("newImage").value;
+      const category = document.getElementById("categorySelect").value;
+
+      if (!name || !category) {
+        alert("❗ Name and category are required");
+        return;
+      }
+
+      const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "");
+      const ref = doc(db, "categories", category, "products", id);
+      await setDoc(ref, { name, price, stock, image });
+
+      alert("✅ New axis added!");
+      if (category === currentCategory) {
+        loadProducts(category);
+      }
+    };
+
+    window.onload = async () => {
+      await loadCategories();
+    };
+  </script>
+</head>
+<body>
+  <h1>🛠️ Product Admin Panel</h1>
+
+  <!-- 🔽 Category Filter -->
+  <div class="category-list" id="categoryButtons">
+    <p>Loading categories...</p>
+  </div>
+
+  <!-- ➕ Add Axis Form -->
+  <div class="add-form">
+    <h2>Add New Axis</h2>
+    <label>Name: <input id="newName" placeholder="Product name"></label><br>
+    <label>Price: <input type="number" id="newPrice" placeholder="0.00"></label><br>
+    <label>Stock: <input type="number" id="newStock" placeholder="0"></label><br>
+    <label>Image URL: <input id="newImage" placeholder="https://..."></label><br>
+    <label>Category:
+      <select id="categorySelect"></select>
+    </label><br>
+    <button class="add-btn" onclick="addAxis()">➕ Add Axis</button>
+  </div>
+
+  <!-- 🧾 Product List Area -->
+  <div id="items">
+    <p>Select a category to view axes.</p>
+  </div>
+</body>
+</html>
